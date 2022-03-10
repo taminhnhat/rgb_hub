@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Arduino.h>
 #include <FastLED.h>
 #include <EEPROM.h>
 
@@ -200,22 +199,65 @@ void msgProcess(String lightCmd)
       }
       ledStripApply();
     }
-    else if (lightCmd[0] == 'R')
+    else if (lightCmd[0] == 'T')
     {
       // Serial.println("R mode");
       //  SET ROW MODE  CMD:"R1:00FF00:0000FF:0000FF:00FF00:00FF00:000000"
       uint8_t temp = (numOfLedPerStrip / numOfColumnOnWall) - numOfLedPerNode;
       int ledStripIndex = lightCmd[1] - '0' - 1;
       ledStripGenerate(BASE_COLOR, ledStripIndex, 0, numOfLedPerStrip - 1);
+      byte startIndex = 2;
       for (int x = 0; x < numOfColumnOnWall; x++)
       {
-        byte pos = 3 + x * 7;
-        String rgbVal = lightCmd.substring(pos, pos + 6);
+        byte endIndex = lightCmd.indexOf(":", startIndex + 1);
+        String lightIndex = lightCmd.substring(startIndex + 1, endIndex);
+        Serial.print(startIndex);
+        Serial.print(":");
+        Serial.print(endIndex);
+        Serial.print(":");
+        Serial.println(lightIndex);
+        uint8_t numOfLight = lightIndex.length();
+
+        uint8_t numOfLedPerUser;
+        switch (numOfLight)
+        {
+        case 1:
+          numOfLedPerUser = numOfLedPerNode;
+          break;
+        case 2:
+          numOfLedPerUser = numOfLedPerNode / 2;
+          break;
+        case 3:
+          numOfLedPerUser = numOfLedPerNode / 3;
+          break;
+        case 4:
+          numOfLedPerUser = numOfLedPerNode / 4;
+          break;
+        case 5:
+          numOfLedPerUser = numOfLedPerNode / 5;
+          break;
+        default:
+          break;
+        }
+
         uint16_t startLedIndex = (temp / 2) + (temp + numOfLedPerNode) * x;
-        int stopLedIndex = numOfLedPerNode + startLedIndex - 1;
-        // if (rgbVal.compareTo("000000"))
-        //   rgbVal = BASE_COLOR;
-        ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
+        for (int j = 1; j <= numOfLight; j++)
+        {
+          uint8_t whichLight = lightIndex[j - 1] - '0';
+          String rgbVal = lightColor[whichLight];
+          int stopLedIndex = numOfLedPerUser + startLedIndex - 1;
+          // if (rgbVal.compareTo("000000"))
+          //   rgbVal = BASE_COLOR;
+          Serial.print(startLedIndex);
+          Serial.print('-');
+          Serial.print(stopLedIndex);
+          Serial.print('-');
+          Serial.println(rgbVal);
+          ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
+          startLedIndex += numOfLedPerUser;
+        }
+
+        startIndex = endIndex;
       }
       ledStripApply();
     }
