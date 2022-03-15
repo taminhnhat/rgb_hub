@@ -16,7 +16,7 @@ struct RGB_COLOR
   uint8_t blue = 0;
 } rgbColor;
 
-String lightColor[7] = {"ffffff", "ff0000", "00ff00", "0000ff", "ff00ff", "ffff00", "00ffff"};
+String lightColor[8] = {"000000", "00ff00", "0000ff", "ffff00", "ff00ff", "00ffff", "ff0000", "ffffff"};
 
 uint8_t numOfLedPerNode = 0x00;
 uint8_t numOfColumnOnWall = 0x00;
@@ -222,7 +222,7 @@ void msgProcess(String lightCmd)
         switch (numOfLight)
         {
         case 1:
-          numOfLedPerUser = numOfLedPerNode;
+          numOfLedPerUser = numOfLedPerNode / 2;
           break;
         case 2:
           numOfLedPerUser = numOfLedPerNode / 2;
