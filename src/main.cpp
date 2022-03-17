@@ -28,6 +28,7 @@ int reloadConfigFromEeprom();
 void msgProcess(String);
 int ledStripGenerate(String, int, uint16_t, uint16_t);
 int ledStripApply();
+int initEEPROM();
 int getValOfCfg(char, String);
 int eepromWriteUint16(int, uint16_t);
 uint16_t eepromReadUint16(int);
@@ -46,7 +47,13 @@ void setup()
   digitalWrite(LED_BUILTIN, 1);
   delay(1000);
   digitalWrite(LED_BUILTIN, 0);
+
+  eepromWriteUint16(0, 60); //
+  EEPROM.update(2, 6);
+  EEPROM.update(3, 10);
+  EEPROM.update(4, 50);
   reloadConfigFromEeprom();
+
   FastLED.addLeds<NEOPIXEL, 2>(leds[0], NUM_OF_LED_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 3>(leds[1], NUM_OF_LED_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 4>(leds[2], NUM_OF_LED_PER_STRIP);
@@ -57,9 +64,9 @@ void setup()
   ledStripGenerate("000000", 2, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 3, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 4, 0, numOfLedPerStrip - 1);
-  ledStripApply();
   Serial.println("RGB Hub start");
   Serial1.println("RGB Hub start");
+  ledStripApply();
 }
 
 void loop()
@@ -203,7 +210,6 @@ void msgProcess(String lightCmd)
     {
       // Serial.println("R mode");
       //  SET ROW MODE  CMD:"R1:00FF00:0000FF:0000FF:00FF00:00FF00:000000"
-      uint8_t temp = (numOfLedPerStrip / numOfColumnOnWall) - numOfLedPerNode;
       int ledStripIndex = lightCmd[1] - '0' - 1;
       ledStripGenerate(BASE_COLOR, ledStripIndex, 0, numOfLedPerStrip - 1);
       byte startIndex = 2;
@@ -240,7 +246,8 @@ void msgProcess(String lightCmd)
           break;
         }
 
-        uint16_t startLedIndex = (temp / 2) + (temp + numOfLedPerNode) * x;
+        uint8_t temp = (numOfLedPerStrip / numOfColumnOnWall) - numOfLedPerUser * numOfLight;
+        uint16_t startLedIndex = (temp / 2) + (temp + numOfLedPerUser * numOfLight) * x;
         for (int j = 1; j <= numOfLight; j++)
         {
           uint8_t whichLight = lightIndex[j - 1] - '0';
