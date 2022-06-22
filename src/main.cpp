@@ -48,10 +48,10 @@ void setup()
   delay(1000);
   digitalWrite(LED_BUILTIN, 0);
 
-  eepromWriteUint16(0, 60); //
-  EEPROM.update(2, 6);
-  EEPROM.update(3, 10);
-  EEPROM.update(4, 50);
+  // eepromWriteUint16(0, 60); //
+  // EEPROM.update(2, 6);
+  // EEPROM.update(3, 10);
+  // EEPROM.update(4, 50);
   reloadConfigFromEeprom();
 
   FastLED.addLeds<NEOPIXEL, 2>(leds[0], NUM_OF_LED_PER_STRIP);
