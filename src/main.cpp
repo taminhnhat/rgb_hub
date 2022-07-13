@@ -2,11 +2,12 @@
 #include <FastLED.h>
 #include <EEPROM.h>
 
-#define NUM_OF_ROW 5
+#define NUM_OF_ROW 6
 #define NUM_OF_LED_PER_STRIP 300
 #define BASE_COLOR "000000"
 
 CRGB leds[NUM_OF_ROW][NUM_OF_LED_PER_STRIP];
+CRGB statusLight[12];
 
 String messageFromSerial = "";
 struct RGB_COLOR
@@ -28,6 +29,7 @@ int reloadConfigFromEeprom();
 void msgProcess(String);
 int ledStripGenerate(String, int, uint16_t, uint16_t);
 int ledStripApply();
+int statusLightGenerate(String);
 int initEEPROM();
 int getValOfCfg(char, String);
 int eepromWriteUint16(int, uint16_t);
@@ -59,11 +61,13 @@ void setup()
   FastLED.addLeds<NEOPIXEL, 4>(leds[2], NUM_OF_LED_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 5>(leds[3], NUM_OF_LED_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 6>(leds[4], NUM_OF_LED_PER_STRIP);
+  FastLED.addLeds<NEOPIXEL, 7>(leds[5], 12);
   ledStripGenerate("000000", 0, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 1, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 2, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 3, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 4, 0, numOfLedPerStrip - 1);
+  ledStripGenerate("ff0000", 5, 0, 11);
   Serial.println("RGB Hub start");
   Serial1.println("RGB Hub start");
   ledStripApply();
@@ -72,6 +76,11 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
+  if ((millis() - timeStamp) > 6000)
+  {
+    ledStripGenerate("ff0000", 5, 0, 11);
+    ledStripApply();
+  }
 }
 
 void serialEvent1()
@@ -185,6 +194,13 @@ void msgProcess(String lightCmd)
     }
     Serial.println();
   }
+  else if (lightCmd.startsWith("STT"))
+  {
+    timeExec = millis() - timeStamp;
+    timeStamp = millis();
+    Serial.println(timeExec);
+    Serial1.println("active");
+  }
   else
   {
     if (lightCmd[0] == 'R')
@@ -208,8 +224,8 @@ void msgProcess(String lightCmd)
     }
     else if (lightCmd[0] == 'T')
     {
-      // Serial.println("R mode");
-      //  SET ROW MODE  CMD:"R1:00FF00:0000FF:0000FF:00FF00:00FF00:000000"
+      // Serial.println("T mode");
+      //  SET ROW MODE  CMD:"R1:123:345:1:4:12345:35"
       int ledStripIndex = lightCmd[1] - '0' - 1;
       ledStripGenerate(BASE_COLOR, ledStripIndex, 0, numOfLedPerStrip - 1);
       byte startIndex = 2;
@@ -341,7 +357,6 @@ int getValOfCfg(char header, String lightCommand)
  */
 int ledStripGenerate(String strRgb, int ledStripIndex, uint16_t startLedIndex, uint16_t stopLedIndex)
 {
-  timeStamp = micros();
   String hexColor = "0x" + strRgb;
   long rgbHexFormat = strtol(&hexColor[0], NULL, 16);
   rgbColor.red = rgbHexFormat >> 16;
@@ -351,8 +366,6 @@ int ledStripGenerate(String strRgb, int ledStripIndex, uint16_t startLedIndex, u
   {
     leds[ledStripIndex][idx] = CRGB(rgbColor.red, rgbColor.green, rgbColor.blue);
   }
-  timeExec = micros() - timeStamp;
-  // Serial.println(timeExec);
   return 1;
 }
 
@@ -364,6 +377,20 @@ int ledStripGenerate(String strRgb, int ledStripIndex, uint16_t startLedIndex, u
 int ledStripApply()
 {
   FastLED.show();
+  return 1;
+}
+
+int statusLightGenerate(String strRgb)
+{
+  String hexColor = "0x" + strRgb;
+  long rgbHexFormat = strtol(&hexColor[0], NULL, 16);
+  rgbColor.red = rgbHexFormat >> 16;
+  rgbColor.green = rgbHexFormat >> 8 & 0xFF;
+  rgbColor.blue = rgbHexFormat & 0xFF;
+  for (unsigned int idx = 0; idx <= 11; idx++)
+  {
+    statusLight[idx] = CRGB(rgbColor.red, rgbColor.green, rgbColor.blue);
+  }
   return 1;
 }
 
