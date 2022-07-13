@@ -76,11 +76,11 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  if ((millis() - timeStamp) > 6000)
-  {
-    ledStripGenerate("ff0000", 5, 0, 11);
-    ledStripApply();
-  }
+  // if ((millis() - timeStamp) > 6000)
+  // {
+  //   ledStripGenerate("ff0000", 5, 0, 11);
+  //   ledStripApply();
+  // }
 }
 
 void serialEvent1()
@@ -210,15 +210,23 @@ void msgProcess(String lightCmd)
       uint8_t temp = (numOfLedPerStrip / numOfColumnOnWall) - numOfLedPerNode;
       int ledStripIndex = lightCmd[1] - '0' - 1;
       ledStripGenerate(BASE_COLOR, ledStripIndex, 0, numOfLedPerStrip - 1);
-      for (int x = 0; x < numOfColumnOnWall; x++)
+      if (ledStripIndex == 5)
       {
-        byte pos = 3 + x * 7;
-        String rgbVal = lightCmd.substring(pos, pos + 6);
-        uint16_t startLedIndex = (temp / 2) + (temp + numOfLedPerNode) * x;
-        int stopLedIndex = numOfLedPerNode + startLedIndex - 1;
-        // if (rgbVal.compareTo("000000"))
-        //   rgbVal = BASE_COLOR;
-        ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
+        String rgbVal = lightCmd.substring(3, 9);
+        ledStripGenerate(rgbVal, 5, 0, 12);
+      }
+      else
+      {
+        for (int x = 0; x < numOfColumnOnWall; x++)
+        {
+          byte pos = 3 + x * 7;
+          String rgbVal = lightCmd.substring(pos, pos + 6);
+          uint16_t startLedIndex = (temp / 2) + (temp + numOfLedPerNode) * x;
+          int stopLedIndex = numOfLedPerNode + startLedIndex - 1;
+          // if (rgbVal.compareTo("000000"))
+          //   rgbVal = BASE_COLOR;
+          ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
+        }
       }
       ledStripApply();
     }
@@ -233,11 +241,11 @@ void msgProcess(String lightCmd)
       {
         byte endIndex = lightCmd.indexOf(":", startIndex + 1);
         String lightIndex = lightCmd.substring(startIndex + 1, endIndex);
-        Serial.print(startIndex);
-        Serial.print(":");
-        Serial.print(endIndex);
-        Serial.print(":");
-        Serial.println(lightIndex);
+        // Serial.print(startIndex);
+        // Serial.print(":");
+        // Serial.print(endIndex);
+        // Serial.print(":");
+        // Serial.println(lightIndex);
         uint8_t numOfLight = lightIndex.length();
 
         uint8_t numOfLedPerUser;
@@ -271,11 +279,11 @@ void msgProcess(String lightCmd)
           int stopLedIndex = numOfLedPerUser + startLedIndex - 1;
           // if (rgbVal.compareTo("000000"))
           //   rgbVal = BASE_COLOR;
-          Serial.print(startLedIndex);
-          Serial.print('-');
-          Serial.print(stopLedIndex);
-          Serial.print('-');
-          Serial.println(rgbVal);
+          // Serial.print(startLedIndex);
+          // Serial.print('-');
+          // Serial.print(stopLedIndex);
+          // Serial.print('-');
+          // Serial.println(rgbVal);
           ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
           startLedIndex += numOfLedPerUser;
         }
