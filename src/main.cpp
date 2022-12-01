@@ -9,7 +9,8 @@
 CRGB leds[NUM_OF_ROW][NUM_OF_LED_PER_STRIP];
 CRGB statusLight[12];
 
-String messageFromSerial = "";
+String messageFromSerial0 = "";
+String messageFromSerial1 = "";
 struct RGB_COLOR
 {
   uint8_t red = 0;
@@ -90,12 +91,12 @@ void serialEvent1()
     char tempChar = (char)Serial1.read();
     if (tempChar != '\n')
     {
-      messageFromSerial += tempChar;
+      messageFromSerial1 += tempChar;
     }
     else
     {
-      msgProcess(messageFromSerial);
-      messageFromSerial = "";
+      msgProcess(messageFromSerial1);
+      messageFromSerial1 = "";
     }
   }
 }
@@ -106,12 +107,12 @@ void serialEvent()
     char tempChar = (char)Serial.read();
     if (tempChar != '\n')
     {
-      messageFromSerial += tempChar;
+      messageFromSerial0 += tempChar;
     }
     else
     {
-      msgProcess(messageFromSerial);
-      messageFromSerial = "";
+      msgProcess(messageFromSerial0);
+      messageFromSerial0 = "";
     }
   }
 }
@@ -332,6 +333,27 @@ void msgProcess(String lightCmd)
       ledStripGenerate(rgbVal, ledStripIndex, 0, numOfLedPerStrip - 1);
       ledStripApply();
     }
+    else if (lightCmd[0] == 'W')
+    {
+      // Serial.println("W mode");
+      //  RESET ROW MODE  CMD:"W1:12:34:FFFFFF"
+      int ledStripIndex = lightCmd[1] - '0' - 1;
+      const int endOfStartIndex = lightCmd.indexOf(':', 3);
+      const int endOfStopIndex = lightCmd.indexOf(':', endOfStartIndex + 1);
+      const String stringOfStartIndex = lightCmd.substring(3, endOfStartIndex);
+      const String stringOfStopIndex = lightCmd.substring(endOfStartIndex + 1, endOfStopIndex);
+      const String stringOfRgbVal = lightCmd.substring(endOfStopIndex + 1, endOfStopIndex + 7);
+      const int startLedIndex = stringOfStartIndex.toInt();
+      const int stopLedIndex = stringOfStopIndex.toInt();
+      // Serial.print("light color ");
+      // Serial.print(stringOfRgbVal);
+      // Serial.print(" at ");
+      // Serial.print(startLedIndex);
+      // Serial.print(" to ");
+      // Serial.println(stopLedIndex);
+      ledStripGenerate(stringOfRgbVal, ledStripIndex, startLedIndex, stopLedIndex);
+      ledStripApply();
+    }
     else
     {
       Serial.println("Invalid message!");
@@ -359,7 +381,7 @@ int getValOfCfg(char header, String lightCommand)
  *
  * @param strRgb light value, ex: "ff053a"
  * @param ledStripIndex index of led strip (0 to 4)
- * @param startLedIndex index of start led
+ * @param startLedIndex index of start led (>=0)
  * @param stopLedIndex index of stop led
  * @return int
  */
