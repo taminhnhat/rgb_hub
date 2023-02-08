@@ -4,6 +4,7 @@
 
 #define NUM_OF_ROW 6
 #define NUM_OF_LED_PER_STRIP 300
+#define ENABLE_SERIAL_1 false
 #define BASE_COLOR "000000"
 
 CRGB leds[NUM_OF_ROW][NUM_OF_LED_PER_STRIP];
@@ -41,7 +42,8 @@ long timeExec = 0;
 void setup()
 {
   Serial.begin(115200);
-  Serial1.begin(115200);
+  if (ENABLE_SERIAL_1)
+    Serial1.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, 1);
   delay(1000);
@@ -69,8 +71,9 @@ void setup()
   ledStripGenerate("000000", 3, 0, numOfLedPerStrip - 1);
   ledStripGenerate("000000", 4, 0, numOfLedPerStrip - 1);
   ledStripGenerate("ff0000", 5, 0, 11);
-  Serial.println("RGB Hub start");
-  Serial1.println("RGB Hub start");
+  Serial.println("Start");
+  if (ENABLE_SERIAL_1)
+    Serial1.println("Start");
   ledStripApply();
 }
 
@@ -147,8 +150,8 @@ int reloadConfigFromEeprom()
  */
 void msgProcess(String lightCmd)
 {
-  Serial.print("cmd:");
-  Serial.println(lightCmd);
+  // Serial.print("cmd:");
+  // Serial.println(lightCmd);
 
   if (lightCmd.startsWith(F("CFG")))
   {
@@ -197,10 +200,13 @@ void msgProcess(String lightCmd)
   }
   else if (lightCmd.startsWith("STT"))
   {
-    timeExec = millis() - timeStamp;
-    timeStamp = millis();
-    Serial.println(timeExec);
-    Serial1.println("active");
+    // timeExec = millis() - timeStamp;
+    // timeStamp = millis();
+    // Serial.println(timeExec);
+    Serial.println("active");
+
+    if (ENABLE_SERIAL_1)
+      Serial1.println("active");
   }
   else
   {
