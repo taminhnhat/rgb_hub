@@ -28,7 +28,7 @@ uint16_t numOfLedPerStrip = 0x00;
 uint8_t dashWidth = 1;
 
 int reloadConfigFromEeprom();
-void msgProcess(String);
+void msgProcess(String, Stream &);
 int ledStripGenerate(String, int, uint16_t, uint16_t);
 int ledStripApply();
 int statusLightGenerate(String);
@@ -53,10 +53,10 @@ void setup()
   delay(1000);
   digitalWrite(LED_BUILTIN, 0);
 
-  eepromWriteUint16(0, 60); //
-  EEPROM.update(2, 6);      //
-  EEPROM.update(3, 10);     //
-  EEPROM.update(4, 50);     //
+  // eepromWriteUint16(0, 60); //
+  // EEPROM.update(2, 6);      //
+  // EEPROM.update(3, 10);     //
+  // EEPROM.update(4, 50);     //
   reloadConfigFromEeprom();
 
   FastLED.addLeds<NEOPIXEL, 2>(leds[0], NUM_OF_LED_PER_STRIP);
@@ -98,7 +98,7 @@ void serialEvent1()
     }
     else
     {
-      msgProcess(messageFromSerial1);
+      msgProcess(messageFromSerial1, Serial1);
       messageFromSerial1 = "";
     }
   }
@@ -114,7 +114,7 @@ void serialEvent()
     }
     else
     {
-      msgProcess(messageFromSerial0);
+      msgProcess(messageFromSerial0, Serial);
       messageFromSerial0 = "";
     }
   }
@@ -131,7 +131,17 @@ int reloadConfigFromEeprom()
   numOfColumnOnWall = EEPROM.read(2);     // 3rd byte
   numOfLedPerNode = EEPROM.read(3);       // 4rd byte
   brightnessOfLed = EEPROM.read(4);       // 5th byte
-  FastLED.setBrightness(brightnessOfLed);
+  if (brightnessOfLed > 250)
+  {
+    Serial.println("reset congiguration to factory!");
+    eepromWriteUint16(0, 60); //
+    EEPROM.update(2, 6);      //
+    EEPROM.update(3, 10);     //
+    EEPROM.update(4, 50);     //
+    FastLED.setBrightness(50);
+  }
+  else
+    FastLED.setBrightness(brightnessOfLed);
   // Serial.print("leds:");
   // Serial.println(numOfLedPerStrip);
   // Serial.print("cols:");
@@ -148,14 +158,14 @@ int reloadConfigFromEeprom()
  *
  * @param lightCmd Input command
  */
-void msgProcess(String lightCmd)
+void msgProcess(String lightCmd, Stream &stream)
 {
-  // Serial.print("cmd:");
-  // Serial.println(lightCmd);
+  // stream.print("cmd:");
+  // stream.println(lightCmd);
 
   if (lightCmd.startsWith(F("CFG")))
   {
-    // Serial.println("config mode");
+    // stream.println("config mode");
     //  CONFIG MODE
     // CFG:T300.C10.N6.B100.b255
     char cfg[4] = {'T', 'C', 'N', 'B'};
@@ -174,40 +184,37 @@ void msgProcess(String lightCmd)
       }
     }
     reloadConfigFromEeprom();
-    Serial.println("OK");
+    stream.println("OK");
   }
   else if (lightCmd.startsWith("GETINFO"))
   {
-    // Serial.println("get info mode");
+    // stream.println("get info mode");
     //  GET INFO MODE
     char cfg[4] = {'T', 'C', 'N', 'B'};
-    Serial.println(F("NAME:WALL_WS2812_MEGA2560"));
-    Serial.print(F("CONFIG:"));
+    stream.println(F("NAME:WALL_WS2812_MEGA2560"));
+    stream.print(F("CONFIG:"));
     for (unsigned int x = 0; x < sizeof(cfg); x++)
     {
       if (x == 0)
       {
-        Serial.print(cfg[x]);
-        Serial.print(numOfLedPerStrip);
+        stream.print(cfg[x]);
+        stream.print(numOfLedPerStrip);
       }
       else
       {
-        Serial.print('.');
-        Serial.print(cfg[x]);
-        Serial.print(EEPROM.read(x + 1));
+        stream.print('.');
+        stream.print(cfg[x]);
+        stream.print(EEPROM.read(x + 1));
       }
     }
-    Serial.println();
+    stream.println();
   }
   else if (lightCmd.startsWith("STT"))
   {
     // timeExec = millis() - timeStamp;
     // timeStamp = millis();
-    // Serial.println(timeExec);
-    Serial.println("active");
-
-    if (ENABLE_SERIAL_1)
-      Serial1.println("active");
+    // stream.println(timeExec);
+    stream.println("active");
   }
   else
   {
@@ -240,7 +247,7 @@ void msgProcess(String lightCmd)
     }
     else if (lightCmd[0] == 'T')
     {
-      // Serial.println("T mode");
+      // stream.println("T mode");
       //  SET ROW MODE  CMD:"R1:123:345:1:4:12345:35"
       int ledStripIndex = lightCmd[1] - '0' - 1;
       ledStripGenerate(BASE_COLOR, ledStripIndex, 0, numOfLedPerStrip - 1);
@@ -249,11 +256,11 @@ void msgProcess(String lightCmd)
       {
         byte endIndex = lightCmd.indexOf(":", startIndex + 1);
         String lightIndex = lightCmd.substring(startIndex + 1, endIndex);
-        // Serial.print(startIndex);
-        // Serial.print(":");
-        // Serial.print(endIndex);
-        // Serial.print(":");
-        // Serial.println(lightIndex);
+        // stream.print(startIndex);
+        // stream.print(":");
+        // stream.print(endIndex);
+        // stream.print(":");
+        // stream.println(lightIndex);
         uint8_t numOfLight = lightIndex.length();
 
         uint8_t numOfLedPerUser;
@@ -287,11 +294,11 @@ void msgProcess(String lightCmd)
           int stopLedIndex = numOfLedPerUser + startLedIndex - 1;
           // if (rgbVal.compareTo("000000"))
           //   rgbVal = BASE_COLOR;
-          // Serial.print(startLedIndex);
-          // Serial.print('-');
-          // Serial.print(stopLedIndex);
-          // Serial.print('-');
-          // Serial.println(rgbVal);
+          // stream.print(startLedIndex);
+          // stream.print('-');
+          // stream.print(stopLedIndex);
+          // stream.print('-');
+          // stream.println(rgbVal);
           ledStripGenerate(rgbVal, ledStripIndex, startLedIndex, stopLedIndex);
           startLedIndex += numOfLedPerUser;
         }
@@ -302,7 +309,7 @@ void msgProcess(String lightCmd)
     }
     // else if (lightCmd[0] == 'H')
     // {
-    //   // Serial.println("H mode");
+    //   // stream.println("H mode");
     //   //  SET ROW MODE  CMD:"H1:00FF00:0000FF:0000FF:00FF00:00FF00:000000"
     //   uint8_t temp = (numOfLedPerStrip / numOfColumnOnWall) - numOfLedPerNode;
     //   int ledStripIndex = lightCmd[1] - '0' - 1;
@@ -333,7 +340,7 @@ void msgProcess(String lightCmd)
     // }
     else if (lightCmd[0] == 'F')
     {
-      // Serial.println("F mode");
+      // stream.println("F mode");
       //  RESET ROW MODE  CMD:"F1:FFFFFF"
       String rgbVal = lightCmd.substring(3, 9);
       int ledStripIndex = lightCmd[1] - '0' - 1;
@@ -342,7 +349,7 @@ void msgProcess(String lightCmd)
     }
     else if (lightCmd[0] == 'W')
     {
-      // Serial.println("W mode");
+      // stream.println("W mode");
       //  RESET ROW MODE  CMD:"W1:12:34:FFFFFF"
       int ledStripIndex = lightCmd[1] - '0' - 1;
       const int endOfStartIndex = lightCmd.indexOf(':', 3);
@@ -352,18 +359,18 @@ void msgProcess(String lightCmd)
       const String stringOfRgbVal = lightCmd.substring(endOfStopIndex + 1, endOfStopIndex + 7);
       const int startLedIndex = stringOfStartIndex.toInt();
       const int stopLedIndex = stringOfStopIndex.toInt();
-      // Serial.print("light color ");
-      // Serial.print(stringOfRgbVal);
-      // Serial.print(" at ");
-      // Serial.print(startLedIndex);
-      // Serial.print(" to ");
-      // Serial.println(stopLedIndex);
+      // stream.print("light color ");
+      // stream.print(stringOfRgbVal);
+      // stream.print(" at ");
+      // stream.print(startLedIndex);
+      // stream.print(" to ");
+      // stream.println(stopLedIndex);
       ledStripGenerate(stringOfRgbVal, ledStripIndex, startLedIndex, stopLedIndex);
       ledStripApply();
     }
     else
     {
-      Serial.println("Invalid message!");
+      stream.println("Invalid message!");
     }
   }
 }
